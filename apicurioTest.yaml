@@ -1,0 +1,151 @@
+---
+openapi: 3.0.2
+info:
+  title: DocumentManagementForUnderwriting
+  version: 1.0.0
+  description: "DocumentManagementForUnderwriting Service permits to dynamically generate\
+    \ PDF documents for underwriting products, configured on XPI application and upload\
+    \ some documents to a specific backend used by Financial evalutation integrated\
+    \ with Mortgages tools.\n\n\nAvailable operations are:\n-\tprintedModule: This\
+    \ operation uses the positionId and moduleId provided in input to retrieves the\
+    \ informations needed to generate the desired PDF module and returns the printed\
+    \ documents in output.\n-\tuploadDocument: This operation uploads a new document\
+    \ in the checklist of the underwriting proposal provided in input or stores some\
+    \ documents inside archive+ tool.\n-\tdownloadDocument: This operation downloads\
+    \ a document from the checklist of the underwriting proposal provided in input.\n\
+    -\tdiscoverPrintForOverdraft: This operation retrieves the list of modules to\
+    \ be printed. For each module you can read the form code, and the entity to which\
+    \ the module is associated. The type of entity can be NDG, PROPOSTA, PRODUCTS\
+    \ or SUPERVISOR.\n-\tretrieveDocumentErrorsList: This operation is used to retrieve\
+    \ all the underwriting proposals uploaded documents’ names which have been marked\
+    \ as “not ok” by back office operators, and the reason of the documents’ errors.\
+    \ \n"
+servers:
+- url: PLCredits/Undewriting
+  description: ""
+paths:
+  /v1/printedModule:
+    description: This operation calls applicationFormWsService (UMF) and PositionPrintsData
+      (UB2 or UB3 or … or UBx, depending on the positionId provided in input) web
+      services to retrieve the position’s informations that are needed to produce
+      the PDF. Then it calls XPI’s FirmaMiaWebService passing retrieved position’s
+      data and it obtains the generated documents, as SOAP attachments, which are
+      returned in output.
+    servers:
+    - url: /underwrite
+      description: ""
+    get:
+      parameters:
+      - examples:
+          positionIdExample:
+            value: "6122"
+        name: positionId
+        description: positionId
+        schema:
+          type: string
+        in: query
+        required: true
+      - examples:
+          documentItemIdExample:
+            value: "12345"
+        name: documentItemId
+        description: Unique Document identifier inside Checklist (independent of version)
+        schema:
+          type: string
+        in: query
+        required: true
+      - examples:
+          productFamilyExample:
+            value: '"FV"'
+        name: productFamily
+        description: 'Identifies product family: in case this information is not enough
+          to clearly identify product, it’s mandatory to populate also product code.
+          At moment only value FV (Financial Valuation) is managed'
+        schema:
+          enum:
+          - FV
+          type: string
+        in: query
+        required: false
+      - examples:
+          productCodeExample:
+            value: FV
+        name: productCode
+        description: 'Identifies the product: at moment only value FV (Financial Valuation)
+          is managed'
+        schema:
+          enum:
+          - FV
+          type: string
+        in: query
+        required: false
+      responses:
+        200:
+          content:
+            text/xml:
+              schema:
+                $ref: '#/components/schemas/PrintedModuleResponse'
+              examples:
+                exampleOutcome:
+                  value:
+                    outcome:
+                      code: some text
+                      description: some text
+                    attachmentId: some text
+          description: valid request response
+      security:
+      - BasicAuth: []
+      operationId: getPrintedModule
+      summary: retrieve printed module
+      description: This operation checks if the document identified by the given documentItemId
+        has been generated through a getPrintedModule call. If so, it performs two
+        calls to two Centera services to retrieve  the document. Otherwise it performs
+        a call to a UMF service to retrieve the requested document. The document is
+        returned as a SOAP attachment of the SOAP response.
+components:
+  schemas:
+    outcome:
+      title: Root Type for outcome
+      description: outcome of calls
+      type: object
+      properties:
+        code:
+          type: string
+        description:
+          type: string
+      example:
+        code: OK
+        description: Message
+    PrintedModuleResponse:
+      description: result of call
+      required:
+      - outcome
+      type: object
+      properties:
+        outcome:
+          $ref: '#/components/schemas/outcome'
+          description: ""
+        attachmentId:
+          description: ""
+          type: string
+      example:
+        attachmentId: myId123
+        outcome:
+          code: OK
+          description: message
+  responses:
+    resp:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PrintedModuleResponse'
+      description: ""
+  securitySchemes:
+    BasicAuth:
+      scheme: basic
+      type: http
+security:
+- BasicAuth: []
+tags:
+- name: DocumentManagementForUnderwriting
+  description: Underwririting Domain
